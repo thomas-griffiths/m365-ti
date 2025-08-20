@@ -33,44 +33,52 @@ The goal is to fetch indicators from a public threat feed and use them to check 
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/<your-username>/m365-threat-feed.git
-   cd m365-threat-feed
-
+   git clone https://github.com/thomas-griffiths/m365-ti.git
+   cd m365-ti
+   ```
 
 2. Install dependencies:
-
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Configure environment variables:
-
+3. Configure authentication by copying the example config:
    ```bash
-   export TENANT_ID="<your-tenant-id>"
-   export CLIENT_ID="<your-client-id>"
-   export CLIENT_SECRET="<your-client-secret>"
+   cp config.json.example config.json
+   ```
+   
+   Then edit `config.json` with your Azure app credentials:
+   ```json
+   {
+     "tenant_id": "your-tenant-id",
+     "client_id": "your-client-id", 
+     "client_secret": "your-client-secret",
+     "scope": "https://graph.microsoft.com/.default",
+     "graph_base": "https://graph.microsoft.com/v1.0"
+   }
    ```
 
 ---
 
 ##  Usage
 
-### 1. Authenticate and get an access token:
+### Run the threat intelligence scanner:
 
 ```bash
-python auth.py
+python src/main.py --user user@tenant.onmicrosoft.com
 ```
 
-### 2. Fetch threat feed indicators:
+### Common options:
 
 ```bash
-python fetch_feed.py
-```
+# Scan last 100 messages and ensure category exists
+python src/main.py --user user@tenant.onmicrosoft.com --top 100 --ensure-category
 
-### 3. Scan M365 Outlook emails against the threat feed:
+# Send summary email after scanning
+python src/main.py --user user@tenant.onmicrosoft.com --summary-to admin@company.com
 
-```bash
-python scan_emails.py
+# Use custom category name
+python src/main.py --user user@tenant.onmicrosoft.com --category "Malicious-Content"
 ```
 
 ---
