@@ -24,18 +24,15 @@ def load_config(path: Path) -> Dict:
         with path.open() as f:
             config = json.load(f)
     except FileNotFoundError:
-        print(f"Error: Configuration file '{path}' not found.")
-        sys.exit(1)
+        raise FileNotFoundError(f"Configuration file '{path}' not found")
     except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON in configuration file: {e}")
-        sys.exit(1)
+        raise ValueError(f"Invalid JSON in configuration file: {e}")
 
     # Validate required configuration keys
     required_keys = ["tenant_id", "client_id", "client_secret"]
     missing_keys = [key for key in required_keys if not config.get(key)]
     if missing_keys:
-        print(f"Error: Missing required configuration keys: {missing_keys}")
-        sys.exit(1)
+        raise ValueError(f"Missing required configuration keys: {missing_keys}")
 
     return config
 
@@ -51,13 +48,11 @@ def scan_and_tag(
     """Main scanning and tagging logic with improved error handling."""
     # Validate user email
     if not validate_email(user):
-        print(f"Error: Invalid user email format: {user}")
-        sys.exit(1)
+        raise ValueError(f"Invalid user email format: {user}")
 
     # Validate summary email if provided
     if summary_to and not validate_email(summary_to):
-        print(f"Error: Invalid summary email format: {summary_to}")
-        sys.exit(1)
+        raise ValueError(f"Invalid summary email format: {summary_to}")
 
     # 1) Pull IoCs
     try:
@@ -71,16 +66,14 @@ def scan_and_tag(
 
         print(f"[feed] domains={len(domains)} ips={len(ips)}")
     except Exception as e:
-        print(f"Error collecting IoCs: {e}")
-        sys.exit(1)
+        raise RuntimeError(f"Error collecting IoCs: {e}") from e
 
     # 2) List recent messages
     try:
         msgs = client.list_messages(user, top=top)
         print(f"[graph] fetched {len(msgs)} messages")
     except Exception as e:
-        print(f"Error fetching messages: {e}")
-        sys.exit(1)
+        raise RuntimeError(f"Error fetching messages: {e}") from e
 
     # 3) Find hits
     needles = set(domains) | set(ips)
@@ -181,11 +174,11 @@ def main():
             ensure_category=args.ensure_category,
             summary_to=args.summary_to,
         )
+    except (FileNotFoundError, ValueError, RuntimeError) as e:
+        print(f"Error: {e}")
+        sys.exit(1)
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error: {e}")
         sys.exit(1)
 
 
