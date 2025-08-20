@@ -1,12 +1,14 @@
 git clone https://github.com/thomas-griffiths/m365-ti.git
 cd m365-ti
-pip install -r requirements.txt   # if you provided requirements.txt
+pip install -r requirements.txt  
 
 # Set environment variables (example values)
 export USER_UPN="user@domain.com"
 export TOP=25
 export CATEGORY="Suspect-IOC"
 export SUMMARY_TO="secops@domain.com"
+
+#edit config.json.example and save as config.json
 
 # Run the one-button script
 ./run-demo.sh
