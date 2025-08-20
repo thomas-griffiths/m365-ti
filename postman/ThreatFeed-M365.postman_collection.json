@@ -1,8 +1,0 @@
-
-{
-  "tenant_id": "xxxxxx-xxxxx-xxxx",
-  "client_id": "xxxx-xxxx-xxxx",
-  "client_secret": "YOUR-SECRET",
-  "scope": "https://graph.microsoft.com/.default",
-  "graph_base": "https://graph.microsoft.com/v1.0"
-}
