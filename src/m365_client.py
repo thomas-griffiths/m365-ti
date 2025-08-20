@@ -138,3 +138,13 @@ class M365Client:
                 resp.raise_for_status()
         except requests.RequestException as e:
             raise RuntimeError(f"Failed to send mail to {to}: {e}")
+
+    def close(self) -> None:
+        """Close the underlying HTTP session."""
+        self._session.close()
+
+    def __enter__(self) -> "M365Client":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
