@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+*.sqlite3
+
+# VSCode / IDE
+.vscode/
+.idea/
+
+# Local config & tokens
+config.json
+*.postman_environment.json
+
+# OS
+.DS_Store
+Thumbs.db
