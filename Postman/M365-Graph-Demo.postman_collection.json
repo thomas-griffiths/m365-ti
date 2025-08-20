@@ -1,0 +1,157 @@
+{
+  "info": {
+    "name": "M365 Graph Demo (Clean)",
+    "_postman_id": "cbb6a5e8-4e7b-4b7e-96fd-graph-demo",
+    "description": "Demo: client_credentials auth to Microsoft Graph → list users, list messages, ensure category, tag message, send summary mail.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Token (client_credentials)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "client_id", "value": "{{client_id}}", "type": "text" },
+            { "key": "client_secret", "value": "{{client_secret}}", "type": "text" },
+            { "key": "scope", "value": "https://graph.microsoft.com/.default", "type": "text" },
+            { "key": "grant_type", "value": "client_credentials", "type": "text" }
+          ]
+        },
+        "url": {
+          "raw": "https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token",
+          "protocol": "https",
+          "host": ["login", "microsoftonline", "com"],
+          "path": ["{{tenant_id}}", "oauth2", "v2.0", "token"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let json = pm.response.json();",
+              "if (json.access_token) {",
+              "  pm.environment.set('access_token', json.access_token);",
+              "  console.log('Access token saved to environment.');",
+              "} else {",
+              "  console.error('No access_token in response');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Users",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "{{graph}}/users?$top=10&$select=id,userPrincipalName,mail",
+          "host": ["{{graph}}"],
+          "path": ["users"],
+          "query": [
+            { "key": "$top", "value": "10" },
+            { "key": "$select", "value": "id,userPrincipalName,mail" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "List Messages (user)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "{{graph}}/users/{{user_upn}}/messages?$top={{top}}&$select=id,subject,receivedDateTime,bodyPreview",
+          "host": ["{{graph}}"],
+          "path": ["users", "{{user_upn}}", "messages"],
+          "query": [
+            { "key": "$top", "value": "{{top}}" },
+            { "key": "$select", "value": "id,subject,receivedDateTime,bodyPreview" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Ensure Category",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{graph}}/users/{{user_upn}}/outlook/masterCategories",
+          "host": ["{{graph}}"],
+          "path": ["users", "{{user_upn}}", "outlook", "masterCategories"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"displayName\": \"{{category}}\",\n  \"color\": \"preset0\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Tag Message",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{graph}}/users/{{user_upn}}/messages/{{message_id}}",
+          "host": ["{{graph}}"],
+          "path": ["users", "{{user_upn}}", "messages", "{{message_id}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"categories\": [\"{{category}}\"]\n}"
+        }
+      }
+    },
+    {
+      "name": "Send Summary Email",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{graph}}/users/{{user_upn}}/sendMail",
+          "host": ["{{graph}}"],
+          "path": ["users", "{{user_upn}}", "sendMail"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": {\n    \"subject\": \"[Demo] Graph API test\",\n    \"body\": {\"contentType\": \"Text\", \"content\": \"Hello from Postman\"},\n    \"toRecipients\": [{\"emailAddress\": {\"address\": \"{{summary_to}}\"}}]\n  },\n  \"saveToSentItems\": true\n}"
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "tenant_id", "value": "" },
+    { "key": "client_id", "value": "" },
+    { "key": "client_secret", "value": "" },
+    { "key": "access_token", "value": "" },
+    { "key": "graph", "value": "https://graph.microsoft.com/v1.0" },
+    { "key": "user_upn", "value": "" },
+    { "key": "message_id", "value": "" },
+    { "key": "category", "value": "Suspect-IOC" },
+    { "key": "top", "value": "5" },
+    { "key": "summary_to", "value": "" }
+  ]
+}
+
