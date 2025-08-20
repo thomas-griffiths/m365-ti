@@ -165,22 +165,22 @@ def main():
 
     try:
         cfg = load_config(Path(args.config))
-        client = M365Client(
+        with M365Client(
             tenant_id=cfg["tenant_id"],
             client_id=cfg["client_id"],
             client_secret=cfg["client_secret"],
             scope=cfg.get("scope", "https://graph.microsoft.com/.default"),
             graph_base=cfg.get("graph_base", "https://graph.microsoft.com/v1.0"),
-        )
+        ) as client:
 
-        scan_and_tag(
-            client=client,
-            user=args.user,
-            top=args.top,
-            category=args.category.strip(),
-            ensure_category=args.ensure_category,
-            summary_to=args.summary_to,
-        )
+            scan_and_tag(
+                client=client,
+                user=args.user,
+                top=args.top,
+                category=args.category.strip(),
+                ensure_category=args.ensure_category,
+                summary_to=args.summary_to,
+            )
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")
         sys.exit(1)
