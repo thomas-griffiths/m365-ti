@@ -1,7 +1,10 @@
+
+## `config.json.example`
+```json
 {
-  "info": {
-    "name": "ThreatFeed-M365",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": []
+  "tenant_id": "90553ae0-2690-406e-8032-136f6ef43719",
+  "client_id": "e0906cdb-b2c8-421f-98dc-5e86809fe6d0",
+  "client_secret": "YOUR-SECRET",
+  "scope": "https://graph.microsoft.com/.default",
+  "graph_base": "https://graph.microsoft.com/v1.0"
 }
