@@ -1,0 +1,12 @@
+git clone https://github.com/thomas-griffiths/m365-ti.git
+cd m365-ti
+pip install -r requirements.txt   # if you provided requirements.txt
+
+# Set environment variables (example values)
+export USER_UPN="user@domain.com"
+export TOP=25
+export CATEGORY="Phish-IOC"
+export SUMMARY_TO="secops@domain.com"
+
+# Run the one-button script
+./run-demo.sh
