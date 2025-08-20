@@ -1,22 +1,7 @@
-Import both M365-Graphs-Demo.json
-and Environment.json into postman
+How to use
 
-#Variables
+Import M365-TI-POC.json into Postman (Import → Raw text).
 
-tenant_id
-client_id
-client_secret
-access_token
-graph
-user_upn
-summary_to
-category
-top
-urlhaus_key
-ioc_hosts
-ioc_hosts_text
-ioc_count
-hits_json
-hits_count
-hits_text
-message_id_to_tag
+Select your environment containing the variables (no secrets live in the collection).
+
+Run in order: Get Token → Get IOCs → List Messages & Match IOCs →  Ensure Category → Tag First Hit →  Send IOC Summary Email.
