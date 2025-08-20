@@ -1,6 +1,3 @@
-
-
-
 # M365 Threat Feed Integration
 
 This project demonstrates how to integrate an **open-source threat feed** with **Microsoft 365 (Outlook Email)** using the Microsoft Graph API.  
@@ -80,10 +77,6 @@ python src/main.py --user user@tenant.onmicrosoft.com --summary-to admin@company
 # Use custom category name
 python src/main.py --user user@tenant.onmicrosoft.com --category "Malicious-Content"
 ```
-
----
-
-
 
 ---
 

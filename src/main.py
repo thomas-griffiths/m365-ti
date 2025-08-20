@@ -3,7 +3,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from m365_client import M365Client
 from threat_feed import collect_iocs
@@ -43,7 +43,7 @@ def scan_and_tag(
     top: int,
     category: str,
     ensure_category: bool,
-    summary_to: str | None,
+    summary_to: Optional[str],
 ):
     """Main scanning and tagging logic with improved error handling."""
     # Validate user email
@@ -57,8 +57,8 @@ def scan_and_tag(
     # 1) Pull IoCs
     try:
         iocs = collect_iocs()
-        domains = sorted(iocs["domains"])
-        ips = sorted(iocs["ipv4"])
+        domains = sorted(iocs.get("domains", []))
+        ips = sorted(iocs.get("ipv4", []))
 
         if not domains and not ips:
             print("Warning: No IoCs collected from threat feeds")
@@ -75,11 +75,11 @@ def scan_and_tag(
     except Exception as e:
         raise RuntimeError(f"Error fetching messages: {e}") from e
 
-    # 3) Find hits
-    needles = set(domains) | set(ips)
+    # 3) Find hits (case-insensitive)
+    needles = set([n.lower() for n in domains + ips])
     hits: List[Dict] = []
     for m in msgs:
-        text = f"{m.get('subject', '')} {m.get('bodyPreview', '')}"
+        text = f"{m.get('subject', '')} {m.get('bodyPreview', '')}".lower()
         if contains_any(text, needles):
             hits.append(
                 {
@@ -158,22 +158,21 @@ def main():
 
     try:
         cfg = load_config(Path(args.config))
-        client = M365Client(
+        with M365Client(
             tenant_id=cfg["tenant_id"],
             client_id=cfg["client_id"],
             client_secret=cfg["client_secret"],
             scope=cfg.get("scope", "https://graph.microsoft.com/.default"),
             graph_base=cfg.get("graph_base", "https://graph.microsoft.com/v1.0"),
-        )
-
-        scan_and_tag(
-            client=client,
-            user=args.user,
-            top=args.top,
-            category=args.category.strip(),
-            ensure_category=args.ensure_category,
-            summary_to=args.summary_to,
-        )
+        ) as client:
+            scan_and_tag(
+                client=client,
+                user=args.user,
+                top=args.top,
+                category=args.category.strip(),
+                ensure_category=args.ensure_category,
+                summary_to=args.summary_to,
+            )
     except (FileNotFoundError, ValueError, RuntimeError) as e:
         print(f"Error: {e}")
         sys.exit(1)
@@ -184,3 +183,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    
