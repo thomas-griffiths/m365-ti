@@ -13,5 +13,5 @@ The PoC workflow:
 
 ### 1. Clone repo
 ```bash
-git clone https://github.com/thomas-griffiths/threatfeed-m365-poc.git
+git clone https://github.com/thomas-griffiths/m365-ti.git
 cd threatfeed-m365-poc
