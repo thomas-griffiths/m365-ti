@@ -1,6 +1,6 @@
 How to use
 
-Import this file into Postman (Import → Raw text).
+Import M365-TI-POC.json into Postman (Import → Raw text).
 
 Select your environment containing the variables (no secrets live in the collection).
 
