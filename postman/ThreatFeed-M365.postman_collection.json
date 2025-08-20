@@ -1,9 +1,7 @@
 
-## `config.json.example`
-```json
 {
-  "tenant_id": "90553ae0-2690-406e-8032-136f6ef43719",
-  "client_id": "e0906cdb-b2c8-421f-98dc-5e86809fe6d0",
+  "tenant_id": "xxxxxx-xxxxx-xxxx",
+  "client_id": "xxxx-xxxx-xxxx",
   "client_secret": "YOUR-SECRET",
   "scope": "https://graph.microsoft.com/.default",
   "graph_base": "https://graph.microsoft.com/v1.0"
