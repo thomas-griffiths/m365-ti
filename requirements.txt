@@ -1,3 +1,16 @@
-requests
-msal
-python-dotenv
+# Core HTTP + Graph auth
+requests>=2.31.0
+msal>=1.30.0
+
+# Env + config helpers
+python-dotenv>=1.0.1
+
+# Dev / linting (optional, but useful if you want to extend later)
+black>=24.3.0
+flake8>=7.0.0
+
+# Install
+'''bash
+pip install -r requirements.txt
+
+'''
