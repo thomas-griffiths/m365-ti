@@ -42,3 +42,4 @@ def collect_iocs() -> Dict[str, Set[str]]:
     domains = _urlhaus_domains()
     ips = _feodo_ips()
     return {"domains": domains, "ipv4": ips}
+
