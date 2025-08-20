@@ -1,0 +1,342 @@
+{
+	"info": {
+		"_postman_id": "4d7e8aee-c10a-4da2-811a-b7b8abfeff10",
+		"name": "M365 CTI Integration",
+		"description": "End-to-end demo: URLhaus IOCs -> scan M365 mailbox -> ensure category -> tag first hit -> send summary.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Token (client_credentials)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const json = pm.response.json();",
+							"pm.test('Got access_token', () => pm.expect(json).to.have.property('access_token'));",
+							"pm.environment.set('access_token', json.access_token);"
+						],
+						"type": "text/javascript",
+						"id": "758bf4e5-0446-49ba-a4d1-239796c194b2"
+					}
+				}
+			],
+			"id": "430c21ea-56c7-498f-a209-68d3bbb6a256",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "client_id",
+							"value": "{{client_id}}"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{client_secret}}"
+						},
+						{
+							"key": "scope",
+							"value": "https://graph.microsoft.com/.default"
+						},
+						{
+							"key": "grant_type",
+							"value": "client_credentials"
+						}
+					]
+				},
+				"url": "https://login.microsoftonline.com/{{tenant_id}}/oauth2/v2.0/token"
+			},
+			"response": []
+		},
+		{
+			"name": "Get IOCs (URLhaus recent)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('200 OK', () => pm.response.to.have.status(200));",
+							"const data = pm.response.json();",
+							"const urls = Array.isArray(data.urls) ? data.urls : [];",
+							"const hosts = urls.map(u => (u && u.host ? String(u.host).toLowerCase() : null)).filter(Boolean);",
+							"const uniq = [...new Set(hosts)];",
+							"pm.environment.set('ioc_hosts', JSON.stringify(uniq));",
+							"pm.environment.set('ioc_hosts_text', uniq.join('\\n'));",
+							"pm.environment.set('ioc_count', String(uniq.length));"
+						],
+						"type": "text/javascript",
+						"id": "a41f996f-6b5f-4985-b2b7-3e4629ef72e4"
+					}
+				}
+			],
+			"id": "ce53c080-3c53-408b-83f3-66244f15e308",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Auth-Key",
+						"value": "{{urlhaus_key}}"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					}
+				],
+				"url": "https://urlhaus-api.abuse.ch/v1/urls/recent/limit/200/"
+			},
+			"response": []
+		},
+		{
+			"name": "List Messages & Match IOCs",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Scan the fetched messages client-side for any IOC host substrings",
+							"pm.test('200 OK', () => pm.response.to.have.status(200));",
+							"const res = pm.response.json();",
+							"const msgs = Array.isArray(res.value) ? res.value : [];",
+							"let iocs = [];",
+							"try { iocs = JSON.parse(pm.environment.get('ioc_hosts') || '[]'); } catch(e) { iocs = []; }",
+							"const needles = new Set(iocs.map(x => String(x || '').toLowerCase()).filter(Boolean));",
+							"const hits = [];",
+							"for (const m of msgs) {",
+							"  const subject = (m.subject || '').toLowerCase();",
+							"  const preview = (m.bodyPreview || '').toLowerCase();",
+							"  for (const n of needles) {",
+							"    if (!n) continue;",
+							"    if (subject.includes(n) || preview.includes(n)) {",
+							"      hits.push({ id: m.id, subject: m.subject || '(no subject)', receivedDateTime: m.receivedDateTime || '', match: n });",
+							"      break;",
+							"    }",
+							"  }",
+							"}",
+							"pm.environment.set('hits_json', JSON.stringify(hits));",
+							"pm.environment.set('hits_count', String(hits.length));",
+							"pm.environment.set('hits_text', hits.map(h => `• ${h.receivedDateTime} | ${h.subject} | match: ${h.match}`).join('\\n'));",
+							"pm.environment.set('message_id_to_tag', hits[0] ? hits[0].id : '');",
+							"console.log('IOC hits:', hits.length);"
+						],
+						"type": "text/javascript",
+						"id": "8c83a722-460b-4e70-b7ff-da475c9a07c4"
+					}
+				}
+			],
+			"id": "e6e4b387-0883-4eb8-840a-1b1a3c1aa01e",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					}
+				],
+				"url": {
+					"raw": "{{graph}}/users/{{user_upn}}/messages?$top={{top}}&$select=id,subject,receivedDateTime,bodyPreview,categories",
+					"host": [
+						"{{graph}}"
+					],
+					"path": [
+						"users",
+						"{{user_upn}}",
+						"messages"
+					],
+					"query": [
+						{
+							"key": "$top",
+							"value": "{{top}}"
+						},
+						{
+							"key": "$select",
+							"value": "id,subject,receivedDateTime,bodyPreview,categories"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Ensure Category (create if missing)",
+			"id": "91ffd897-d1cb-4927-af60-260ad1ee1705",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"displayName\": \"{{category}}\",\n  \"color\": \"preset0\"\n}"
+				},
+				"url": "{{graph}}/users/{{user_upn}}/outlook/masterCategories",
+				"description": "Requires MailboxSettings.ReadWrite (Application). If the category already exists, you may see 409 (acceptable)."
+			},
+			"response": []
+		},
+		{
+			"name": "Tag First Hit (if any)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const id = pm.environment.get('message_id_to_tag');",
+							"if (!id) {",
+							"  pm.execution.interrupted = true;",
+							"  throw new Error('No IOC hits found in previous step (message_id_to_tag is empty).');",
+							"}"
+						],
+						"type": "text/javascript",
+						"id": "d0f2c2f1-054a-4a3b-b598-85892a7e40a8"
+					}
+				}
+			],
+			"id": "37d021df-6da1-413d-a5e9-4bd9da761f07",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"categories\": [\"{{category}}\"]\n}"
+				},
+				"url": "{{graph}}/users/{{user_upn}}/messages/{{message_id_to_tag}}"
+			},
+			"response": []
+		},
+		{
+			"name": "Send IOC Summary Email",
+			"id": "8002cc2a-e8ef-42bf-b00f-f582b892949c",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{access_token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"message\": {\n    \"subject\": \"[Demo] Dataminr Summary ({{ioc_count}} IOCs, {{hits_count}} hits)\",\n    \"body\": {\"contentType\": \"HTML\", \"content\": \"<p><strong>IOC hosts (first 200 recent):</strong></p><pre>{{ioc_hosts_text}}</pre><p><strong>Mailbox hits (scanned last {{top}}):</strong></p><pre>{{hits_text}}</pre>\"},\n    \"toRecipients\": [{\"emailAddress\": {\"address\": \"{{summary_to}}\"}}]\n  },\n  \"saveToSentItems\": true\n}"
+				},
+				"url": "{{graph}}/users/{{user_upn}}/sendMail"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "graph",
+			"value": "https://graph.microsoft.com/v1.0"
+		},
+		{
+			"key": "category",
+			"value": "Suspect-IOC"
+		},
+		{
+			"key": "top",
+			"value": "25"
+		},
+		{
+			"key": "access_token",
+			"value": ""
+		},
+		{
+			"key": "message_id_to_tag",
+			"value": ""
+		},
+		{
+			"key": "ioc_hosts",
+			"value": "[]"
+		},
+		{
+			"key": "ioc_hosts_text",
+			"value": ""
+		},
+		{
+			"key": "ioc_count",
+			"value": "0"
+		},
+		{
+			"key": "hits_json",
+			"value": "[]"
+		},
+		{
+			"key": "hits_text",
+			"value": ""
+		},
+		{
+			"key": "hits_count",
+			"value": "0"
+		},
+		{
+			"key": "tenant_id",
+			"value": ""
+		},
+		{
+			"key": "client_id",
+			"value": ""
+		},
+		{
+			"key": "client_secret",
+			"value": ""
+		},
+		{
+			"key": "user_upn",
+			"value": ""
+		},
+		{
+			"key": "summary_to",
+			"value": ""
+		},
+		{
+			"key": "urlhaus_key",
+			"value": ""
+		}
+	]
+}
