@@ -10,7 +10,8 @@ def normalize_text(s: str) -> str:
 def contains_any(text: str, needles: Iterable[str]) -> bool:
     """
     Check if text contains any of the IoCs with improved matching.
-    Uses word boundaries for domains and exact matching for IPs to reduce false positives.
+    Uses negative lookarounds for domains and exact matching for IPs to reduce false
+    positives.
     """
     if not text or not needles:
         return False
@@ -25,10 +26,9 @@ def contains_any(text: str, needles: Iterable[str]) -> bool:
         if _looks_like_ip(needle):
             if re.search(rf"\b{re.escape(needle)}\b", t):
                 return True
-        # For domains, use word boundaries but allow subdomain matching
+        # For domains, ensure the match is not part of a larger token
         else:
-            # Match domain.com or subdomain.domain.com
-            pattern = rf"\b{re.escape(needle)}\b"
+            pattern = rf"(?<![\w.-]){re.escape(needle)}(?![\w.-])"
             if re.search(pattern, t):
                 return True
     return False
