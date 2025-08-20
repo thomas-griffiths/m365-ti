@@ -8,7 +8,7 @@ The goal is to fetch indicators from a public threat feed and use them to check 
 
 ---
 
-## 🚀 Features
+##  Features
 - Connects to Microsoft 365 using OAuth2 and Microsoft Graph API.  
 - Retrieves indicators (IPs, domains, URLs, hashes) from a threat feed.  
 - Cross-checks indicators against Outlook email metadata (senders, URLs, attachments).  
@@ -17,7 +17,7 @@ The goal is to fetch indicators from a public threat feed and use them to check 
 
 ---
 
-## 🛠 Prerequisites
+##  Prerequisites
 - Microsoft 365 tenant with **Outlook Email (Defender for Office 365)**.  
 - An **Azure App Registration** with the following API permissions:  
   - `Mail.Read`  
@@ -29,7 +29,7 @@ The goal is to fetch indicators from a public threat feed and use them to check 
 
 ---
 
-## 📦 Installation
+##  Installation
 
 1. Clone this repository:
    ```bash
@@ -53,7 +53,7 @@ The goal is to fetch indicators from a public threat feed and use them to check 
 
 ---
 
-## ⚡ Usage
+##  Usage
 
 ### 1. Authenticate and get an access token:
 
@@ -87,7 +87,7 @@ python scan_emails.py
 
 ---
 
-## 📜 License
+## License
 
 MIT License – feel free to use, modify, and share.
 
