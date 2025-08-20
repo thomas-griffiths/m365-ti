@@ -1,3 +1,6 @@
+Import both M365-Graphs-Demo.json
+and Environment.json into postman
+
 #Variables
 
 tenant_id
