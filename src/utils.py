@@ -1,5 +1,6 @@
 import re
-from typing import Dict, Iterable
+from functools import lru_cache
+from typing import Dict, Iterable, List
 
 
 def normalize_text(s: str) -> str:
@@ -7,30 +8,34 @@ def normalize_text(s: str) -> str:
     return (s or "").lower()
 
 
+@lru_cache(maxsize=4)
+def _compile_patterns(needles: frozenset) -> List[re.Pattern]:
+    """Pre-compile regex patterns for a frozen set of IoC needles."""
+    patterns = []
+    for needle in needles:
+        needle = (needle or "").lower().strip()
+        if not needle or len(needle) < 3:
+            continue
+        if _looks_like_ip(needle):
+            patterns.append(re.compile(rf"\b{re.escape(needle)}\b"))
+        else:
+            patterns.append(re.compile(rf"(?<![\w.-]){re.escape(needle)}(?![\w.-])"))
+    return patterns
+
+
 def contains_any(text: str, needles: Iterable[str]) -> bool:
     """
     Check if text contains any of the IoCs with improved matching.
     Uses negative lookarounds for domains and exact matching for IPs to reduce false
-    positives.
+    positives. Patterns are compiled once per unique needle set.
     """
     if not text or not needles:
         return False
 
     t = normalize_text(text)
-    for needle in needles:
-        needle = (needle or "").lower().strip()
-        if not needle or len(needle) < 3:  # Skip very short needles
-            continue
-
-        # For IP addresses, use exact matching with word boundaries
-        if _looks_like_ip(needle):
-            if re.search(rf"\b{re.escape(needle)}\b", t):
-                return True
-        # For domains, ensure the match is not part of a larger token
-        else:
-            pattern = rf"(?<![\w.-]){re.escape(needle)}(?![\w.-])"
-            if re.search(pattern, t):
-                return True
+    for pattern in _compile_patterns(frozenset(needles)):
+        if pattern.search(t):
+            return True
     return False
 
 

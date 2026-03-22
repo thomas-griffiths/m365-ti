@@ -6,12 +6,14 @@ Simple IoC collectors from public sources:
 Swap/extend `collect_iocs` to take Dataminr payloads later.
 """
 
+import csv
+import io
 import re
 from typing import Dict, Set
 import requests
 
 
-DOMAIN_RE = re.compile(r"^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+DOMAIN_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*\.[A-Za-z]{2,}$")
 IPV4_RE = re.compile(r"(?:\d{1,3}\.){3}\d{1,3}")
 
 
@@ -26,14 +28,13 @@ def _urlhaus_domains() -> Set[str]:
         return set()
 
     domains: Set[str] = set()
-    for line in r.text.splitlines():
-        if line.startswith("#") or not line.strip():
+    reader = csv.reader(
+        (ln for ln in io.StringIO(r.text) if not ln.startswith("#") and ln.strip())
+    )
+    for parts in reader:
+        if len(parts) < 3:
             continue
-        # CSV: <,,, URL ,,,>
-        parts = line.split(",")
-        if len(parts) < 4:
-            continue
-        raw_url = parts[2]
+        raw_url = parts[2].strip().strip('"')
         # strip scheme and path
         host = raw_url.split("//")[-1].split("/")[0].lstrip("*.").lower()
         if DOMAIN_RE.match(host):
@@ -68,7 +69,6 @@ def collect_iocs() -> Dict[str, Set[str]]:
     domains = {d for d in domains if d and len(d) > 3}
     ips = {ip for ip in ips if ip and _validate_ip(ip)}
 
-    print(f"[feed] Collected {len(domains)} domains, {len(ips)} IPs")
     return {"domains": domains, "ipv4": ips}
 
 
