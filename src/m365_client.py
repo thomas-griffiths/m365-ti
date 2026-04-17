@@ -1,5 +1,6 @@
 import time
 from typing import Dict, List, Optional
+from urllib.parse import quote
 import requests
 import msal
 
@@ -94,14 +95,25 @@ class M365Client:
             )
 
     def tag_message(self, user_upn: str, message_id: str, category: str) -> None:
-        """Tag message with improved error handling."""
+        """Tag message, preserving any existing categories."""
         if not message_id or not category:
             raise ValueError("Message ID and category are required")
 
-        url = f"{self.graph}/users/{user_upn}/messages/{message_id}"
-        payload = {"categories": [category]}
+        url = f"{self.graph}/users/{user_upn}/messages/{quote(message_id, safe='')}"
 
         try:
+            # Fetch existing categories to avoid overwriting them
+            r = self._session.get(
+                url,
+                headers=self._headers(),
+                params={"$select": "categories"},
+                timeout=30,
+            )
+            r.raise_for_status()
+            existing = r.json().get("categories") or []
+            if category in existing:
+                return
+            payload = {"categories": existing + [category]}
             resp = self._session.patch(
                 url,
                 headers={**self._headers(), "Content-Type": "application/json"},

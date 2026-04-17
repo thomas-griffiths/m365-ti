@@ -11,7 +11,7 @@ from main import load_config, scan_and_tag
 
 class DummyClient:
     """Minimal client for scan_and_tag tests."""
-    def list_messages(self, user: str, top: int):
+    def list_messages(self, user: str, top: int, select: str = ""):
         return []
 
     def ensure_category(self, user: str, category: str):
